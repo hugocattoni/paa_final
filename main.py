@@ -1,5 +1,6 @@
 import pandas as pd
 import math
+import time
 
 altura_caixa = 12
 largura_caixa = 12
@@ -46,15 +47,33 @@ def empacotar_produtos_guloso(produtos, altura_caixa, largura_caixa, comprimento
         # print(
         #     f"Altura: {produto.altura} - Largura: {produto.largura} - Comprimento: {produto.comprimento}"
         # )
+
+        # Procurar por uma caixa onde o produto possa se encaixar
+        encaixado = False
         for caixa in caixas:
             if not produto.encaixado:
                 if encaixar_produto_caixa(produto, caixa):
                     produto.encaixado = True
+                    encaixado = True
                     break
-        if not produto.encaixado:
-            nova_caixa = Caixa(altura_caixa, largura_caixa, comprimento_caixa)
-            caixas.append(nova_caixa)
-            encaixar_produto_caixa(produto, nova_caixa)
+
+        # Se não foi possível encaixar na caixa atual, criar uma nova
+        if not encaixado:
+            nova_caixa_encontrada = False
+            for caixa in caixas:
+                if (
+                    caixa.altura >= produto.altura
+                    and caixa.largura >= produto.largura
+                    and caixa.comprimento >= produto.comprimento
+                ):
+                    if encaixar_produto_caixa(produto, caixa):
+                        produto.encaixado = True
+                        nova_caixa_encontrada = True
+                        break
+            if not nova_caixa_encontrada:
+                nova_caixa = Caixa(altura_caixa, largura_caixa, comprimento_caixa)
+                caixas.append(nova_caixa)
+                encaixar_produto_caixa(produto, nova_caixa)
 
     return caixas
 
@@ -98,31 +117,33 @@ def mostrar_caixas(caixas):
 
 def obter_por_dia(df: pd.DataFrame):
     grupos_por_dia = df.groupby(df["order_approved_at"].dt.date)
-    produtos = []
 
-    for dia, grupo in grupos_por_dia:
-        print(f"Dia: {dia}")
-        print(len(grupo))
-
-        # if len(grupo) > 45 and len(grupo) <= 50:
-        # if dia.strftime("%Y-%m-%d") != "2017-01-30":
-
-        for indice, linha in grupo.iterrows():
-            produtos.append(
-                Produto(
+    with open("output_guloso.txt", "w") as arquivo:
+        for dia, grupo in grupos_por_dia:
+            produtos = []
+            # if len(grupo) > 5 and len(grupo) <= 10:
+            # if dia.strftime("%Y-%m-%d") == "2016-10-06":
+            print(f"Dia: {dia}")
+            arquivo.write(f"Dia: {dia}\n")
+            for indice, linha in grupo.iterrows():
+                produto = Produto(
                     math.ceil(linha.product_height_cm / 10),
                     math.ceil(linha.product_width_cm / 10),
                     math.ceil(linha.product_length_cm / 10),
                 )
-            )
+                produtos.append(produto)
 
-        caixas_empacotadas_guloso = empacotar_produtos_guloso(
-            produtos, altura_caixa, largura_caixa, comprimento_caixa
-        )
-        print(
-            f"Total de caixas utilizadas (abordagem gulosa): {len(caixas_empacotadas_guloso)}\n"
-        )
-        # mostrar_caixas(caixas_empacotadas_guloso)
+                arquivo.write(
+                    f"{indice} - Altura: {produto.altura} - Largura: {produto.largura} - Comprimento: {produto.comprimento}\n"
+                )
+
+            caixas_empacotadas_guloso = empacotar_produtos_guloso(
+                produtos, altura_caixa, largura_caixa, comprimento_caixa
+            )
+            arquivo.write(
+                f"Total de caixas utilizadas (abordagem gulosa): {len(caixas_empacotadas_guloso)}\n\n"
+            )
+            # mostrar_caixas(caixas_empacotadas_guloso)
 
 
 df_produtos_pedidos = pd.read_csv("tables/olist_order_items_dataset.csv")
@@ -151,4 +172,9 @@ colunas_desejadas = [
     "order_approved_at",
 ]
 df_final = df_final[colunas_desejadas]
+
+ini = time.time()
 obter_por_dia(df_final)
+fim = time.time()
+
+print(f"Tempo de exec: {fim - ini}")
