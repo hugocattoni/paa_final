@@ -115,10 +115,10 @@ def mostrar_caixas(caixas):
             print()
 
 
-def obter_por_dia(df: pd.DataFrame):
+def obter_por_dia(df: pd.DataFrame, nome_output: str):
     grupos_por_dia = df.groupby(df["order_approved_at"].dt.date)
 
-    with open("output_guloso.txt", "w") as arquivo:
+    with open(f"{nome_output}.txt", "w") as arquivo:
         for dia, grupo in grupos_por_dia:
             produtos = []
             # if len(grupo) > 5 and len(grupo) <= 10:
@@ -146,35 +146,39 @@ def obter_por_dia(df: pd.DataFrame):
             # mostrar_caixas(caixas_empacotadas_guloso)
 
 
-df_produtos_pedidos = pd.read_csv("tables/olist_order_items_dataset.csv")
-df_pedidos = pd.read_csv("tables/olist_orders_dataset.csv")
-df_produtos = pd.read_csv("tables/olist_products_dataset.csv")
-df_clientes = pd.read_csv("tables/olist_customers_dataset.csv")
+def start():
+    df_produtos_pedidos = pd.read_csv("tables/olist_order_items_dataset.csv")
+    df_pedidos = pd.read_csv("tables/olist_orders_dataset.csv")
+    df_produtos = pd.read_csv("tables/olist_products_dataset.csv")
+    df_clientes = pd.read_csv("tables/olist_customers_dataset.csv")
 
-df_final = pd.merge(df_produtos_pedidos, df_pedidos, on="order_id", how="inner")
-df_final = pd.merge(df_final, df_produtos, on="product_id", how="inner")
-df_final = pd.merge(df_final, df_clientes, on="customer_id", how="inner")
-df_final = df_final.dropna(
-    subset=["product_length_cm", "product_height_cm", "product_width_cm"]
-)
-df_final["order_approved_at"] = pd.to_datetime(df_final["order_approved_at"])
-df_final = df_final.sort_values(by="order_approved_at")
+    df_final = pd.merge(df_produtos_pedidos, df_pedidos, on="order_id", how="inner")
+    df_final = pd.merge(df_final, df_produtos, on="product_id", how="inner")
+    df_final = pd.merge(df_final, df_clientes, on="customer_id", how="inner")
+    df_final = df_final.dropna(
+        subset=["product_length_cm", "product_height_cm", "product_width_cm"]
+    )
+    df_final["order_approved_at"] = pd.to_datetime(df_final["order_approved_at"])
+    df_final = df_final.sort_values(by="order_approved_at")
+
+    colunas_desejadas = [
+        "order_id",
+        "order_item_id",
+        "product_id",
+        "product_weight_g",
+        "product_length_cm",
+        "product_height_cm",
+        "product_width_cm",
+        "order_approved_at",
+    ]
+    df_final = df_final[colunas_desejadas]
+
+    ini = time.time()
+    obter_por_dia(df_final, "output_guloso")
+    fim = time.time()
+
+    print(f"Tempo de exec: {fim - ini}")
 
 
-colunas_desejadas = [
-    "order_id",
-    "order_item_id",
-    "product_id",
-    "product_weight_g",
-    "product_length_cm",
-    "product_height_cm",
-    "product_width_cm",
-    "order_approved_at",
-]
-df_final = df_final[colunas_desejadas]
-
-ini = time.time()
-obter_por_dia(df_final)
-fim = time.time()
-
-print(f"Tempo de exec: {fim - ini}")
+if __name__ == "__main__":
+    start()
