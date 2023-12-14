@@ -2,8 +2,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 import random
 import time
-from main import obter_por_dia as obter_por_dia_guloso
-from main_gulosa_rotacao import obter_por_dia as obter_por_dia_guloso_rotacao
+from main_guloso_sem_rotacao import obter_por_dia as obter_por_dia_guloso
+from main_guloso_rotacao import obter_por_dia as obter_por_dia_guloso_rotacao
 
 
 class Produto:
@@ -54,11 +54,11 @@ df = pd.DataFrame(
 )
 
 ini_guloso = time.time()
-obter_por_dia_guloso(df, "output_guloso_ficticio")
+obter_por_dia_guloso(df, "output_guloso_ficticio_teste")
 fim_guloso = time.time()
 
 ini_guloso_rotacao = time.time()
-obter_por_dia_guloso_rotacao(df, "output_guloso_rotacao_ficticio")
+obter_por_dia_guloso_rotacao(df, "output_guloso_rotacao_ficticio_teste")
 fim_guloso_rotacao = time.time()
 
 print(f"Tempo de exec guloso: {fim_guloso - ini_guloso}")
